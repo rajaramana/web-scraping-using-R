@@ -2,9 +2,10 @@ library("rvest")
 library("dplyr")
 library("plyr")
 library("purrr")
+library("RCurl")
 
 # Set the directory
-wd <- "C:\\Users\\rkova\\Desktop\\coin_info_scrape"
+wd <- "C:\\Users\\rkova\\Desktop\\Github-Personal\\coin_info_scrape"
 setwd(wd)
 
 # Read the input file
@@ -41,17 +42,29 @@ data_wrangle <- function(cert,grade){
   # download images
   coin_images <- coin_data %>% html_nodes("div .certlookup-images-item a") %>% html_attr("data-fancybox-href")
   
-  print(paste('coin images length',length(coin_images),sep=" "))
-  
-  # front image
-  download.file(coin_images[[grep(".*_OBV.JPG.*",coin_images)]],destfile= paste0('./img_files/','NGC',cert,'_OBV.JPG'),method='curl')
-  
-  # reverse image
-  download.file(coin_images[[grep(".*_REV.JPG.*",coin_images)]],destfile= paste0('./img_files/','NGC',cert,'_REV.JPG'),method='curl')
-  
-  # adding images to headers
-  coin_headers <- c(coin_headers,'img_obv_url','img_rev_url')
-  header_information <- c(header_information,coin_images[[grep(".*_OBV.JPG.*",coin_images)]],coin_images[[grep(".*_REV.JPG.*",coin_images)]])
+  if(length(coin_images)==0){
+    download.file("http://via.placeholder.com/2160x2880",destfile= paste0('./img_files/','NGC',cert,'_OBV.JPG'),method='libcurl')
+    
+    # reverse image
+    download.file("http://via.placeholder.com/2160x2880",destfile= paste0('./img_files/','NGC',cert,'_REV.JPG'),method='libcurl')
+    
+    # adding images to headers
+    coin_headers <- c(coin_headers,'img_obv_url','img_rev_url')
+    
+    # Passing NA to header
+    header_information <- c(header_information,NA,NA)
+    
+  }else{
+    download.file(coin_images[[grep(".*_OBV.JPG.*",coin_images)]],destfile= paste0('./img_files/','NGC',cert,'_OBV.JPG'),method='libcurl')
+    
+    # reverse image
+    download.file(coin_images[[grep(".*_REV.JPG.*",coin_images)]],destfile= paste0('./img_files/','NGC',cert,'_REV.JPG'),method='libcurl')
+    
+    # adding images to headers
+    coin_headers <- c(coin_headers,'img_obv_url','img_rev_url')
+    
+    header_information <- c(header_information,coin_images[[grep(".*_OBV.JPG.*",coin_images)]],coin_images[[grep(".*_REV.JPG.*",coin_images)]])
+  }
   
   # creating a list
   header_info_list <- map(header_information,function(x)x)
@@ -73,13 +86,3 @@ for(i in 1:nrow(cert_grade_info)){
 }
 
 write.csv(df,"./output_file/output.csv")
-
-
-
-
-
-
-
-
-
-
